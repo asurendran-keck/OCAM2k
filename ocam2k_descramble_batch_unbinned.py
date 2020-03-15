@@ -9,13 +9,14 @@ fps = '100'                                                                     
 gain_total = 20
 pixels_total = 57600
 folder = '/home/aodev/asurendran/OCAM2k/unbinned/' + fps
+filename_base = 'frame'
 descrambler = np.loadtxt('ocam2_descrambling.txt', delimiter = ',').astype(int)         # Source file from FLI for descrambling pixels
 
 # Import data from bmp images taken using EDT program simple_take or take by giving the base filename as 'frame'
 # The program first imports the bmp image, converts the 8 bit bmp to 16 bit numpy array and applies the descrambling operation to get the vector of 57600 16-bit pixels
 img_unscrambled_vector = np.zeros((pixels_total, frames))
 for k in range(0, frames):
-    filename_raw = folder + '/frame_' + "{:0>3d}".format(k) + '.bmp'                    # Import bmp file
+    filename_raw = folder + '/' + filename_base + '_' + "{:0>3d}".format(k) + '.bmp'                    # Import bmp file
     im = Image.open(filename_raw)
     img = np.array(im)                                                                  # Convert image to numpy array
     img16 = np.zeros((np.shape(img)[0], int(np.shape(img)[1] / 2)))

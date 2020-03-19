@@ -9,7 +9,7 @@ from astropy.io import fits
 # Import data from bmp images taken using EDT program simple_take or take by giving the base filename as 'frame'
 # The program first imports the bmp image, converts the 8 bit bmp to 16 bit numpy array and applies the descrambling operation to get the vector of 57600 16-bit pixels
 # The ADU matrix are divided by the gain given in the test report to get the actual electron count
-def unscrambleImage(k, folder, filename_base, gain_total, descrambler):
+def unscrambleImage(k, folder, filename_base, gain_total, descrambler, pixels_total):
     img_unscrambled_vector = np.zeros(pixels_total)
     filename_raw = folder + '/' + filename_base + '_' + "{:0>3d}".format(k) + '.bmp'    # Import bmp file
     im = Image.open(filename_raw)
@@ -50,7 +50,7 @@ for j in range(np.size(fps)):
     folder = '/home/aodev/asurendran/OCAM2k/2020-03-17/unbinned/' + fps[j]
     filename_base = 'frame'                                                             # This should be the same name as the base filename given during frame grab through EDT FG
     # Calls the descrambling function in parallel mode
-    pixelCount_unscrambled = Parallel(n_jobs=num_cores)(delayed(unscrambleImage)(k, folder, filename_base, gain_total, descrambler) for k in range(0, frames))
+    pixelCount_unscrambled = Parallel(n_jobs=num_cores)(delayed(unscrambleImage)(k, folder, filename_base, gain_total, descrambler, pixels_total) for k in range(0, frames))
     pixelCount_unscramblednp = np.asarray(pixelCount_unscrambled)
     print('Unscrambled ' + fps[j] + ' fps')
 
@@ -116,12 +116,12 @@ fig3 = plt.figure()
 plt.plot(expTime, np.mean(var_pix, axis = 0), 'o')
 plt.plot(np.insert(expTime, 0, 0), np.insert((mean_dark_current * expTime) + mean_read_noise_sq, 0, mean_read_noise_sq))
 plt.legend(['OCAM2K data points', 'Fitted linear equation'])
-plt.title('Average variance of pixel count vs exposure time, Intercept (${RON}^2$) = ' + "{:.3f}".format(mean_read_noise_sq) + '${e-}^2$, Slope (Dark current) = ' + "{:.3f}".format(mean_dark_current) + 'e-')
+plt.title('Average variance of pixel count vs exposure time, \nIntercept (${RON}^2$) = ' + "{:.3f}".format(mean_read_noise_sq) + '${e-}^2$ \nSlope (Dark current) = ' + "{:.3f}".format(mean_dark_current) + 'e-')
 plt.xlabel('Exposure time (seconds)')
 plt.ylabel('Variance of pixel count (e-)')
 plt.gca().set_xlim(left = 0)
-manager = plt.get_current_fig_manager()
-manager.window.showMaximized()
+# manager = plt.get_current_fig_manager()
+# manager.window.showMaximized()
 plt.show()
-filename_out = 'img_darkcurrentf' + str(frames) + '_unbinned.png'
+filename_out = 'img_variancef' + str(frames) + '_unbinned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')

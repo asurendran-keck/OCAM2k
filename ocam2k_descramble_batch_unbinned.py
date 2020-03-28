@@ -66,6 +66,7 @@ for j in range(np.size(fps)):
             os.remove(filename_out)
         hdul.writeto(filename_out)
         hdul.close()
+        print('Wrote ' + fps[j] + ' fps FITS file')
     # Variance computation
     var_pix[:, j] = np.var(pixelCount_unscrambled, axis = 0) #CHECK
     expTime[j] = 1 / int(fps[j])

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import multiprocessing
 from joblib import Parallel, delayed
 from astropy.io import fits
+from astropy.io.fits import Header
+import os
 
 # Import data from bmp images taken using EDT program simple_take or take by giving the base filename as 'frame'
 # The program first imports the bmp image, converts the 8 bit bmp to 16 bit numpy array and applies the descrambling operation to get the vector of 57600 16-bit pixels
@@ -25,10 +27,11 @@ def unscrambleImage(k, folder, filename_base, gain_total, descrambler, pixels_to
 frames = 5000
 # Array of FPS values for which the read noise and dark current is computed. Accuracy will be better for more FPS sampling points.
 # The folder names of the frames should be the same as that of the FPS value
-fps = ['2067', '1000', '500', '333', '200', '100', '50', '33', '20', '10']
+# fps = ['2067', '1000', '500', '333', '200', '100', '50', '33', '20', '10']
+fps = ['2067', '1000', '500', '333', '200', '100']
 gain_total = 27.665                                                                     # Total gain derived from OCAM2K test report. Product of EMCCD gain and amplifier gain
 pixels_total = 57600
-fits_write = 0                                                                          # Set to one if fits datacube of images (for every fps setting) has to be generated
+fits_write = 1                                                                          # Set to one if fits datacube of images (for every fps setting) has to be generated
 font = {'family': 'serif',
         'color':  'darkred',
         'weight': 'normal',
@@ -56,16 +59,15 @@ for j in range(np.size(fps)):
 
     # Convert bmp files into FITS datacube for each FPS setting
     if fits_write == 1:
-        hdul = fits.HDUList()
-        hdul.append(fits.PrimaryHDU())
-        for k in range(0, frames):
-            img = np.reshape(pixelCount_unscramblednp[k, :], (240, 240))
-            hdul.append(fits.ImageHDU(data = img))
+        img = np.reshape(pixelCount_unscramblednp, (frames, 240, 240)).astype(np.int16)
+        hdul = fits.HDUList(fits.PrimaryHDU(data = img))
         filename_out = 'img_darkf' + str(frames) + '_unbinned_' + str(fps[j]) + 'fps.fits'
+        if os.path.exists(filename_out):
+            os.remove(filename_out)
         hdul.writeto(filename_out)
-        print('Written '  + fps[j] + ' fps to FITS file')
+        hdul.close()
     # Variance computation
-    var_pix[:, j] = np.var(pixelCount_unscrambled, axis = 0)
+    var_pix[:, j] = np.var(pixelCount_unscrambled, axis = 0) #CHECK
     expTime[j] = 1 / int(fps[j])
 
 # Linear fitting exposure time with Pixel count variance to compute dark current and read noise

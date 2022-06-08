@@ -14,7 +14,7 @@ def unscrambleImage(k, folder, filename_base, gain_total, descrambler, pixels_to
     img_unscrambled_vector = np.zeros(pixels_total)
     filename_raw = folder + '/' + filename_base + '_' + "{:0>3d}".format(k) + '.bmp'    # Import bmp file
     im = Image.open(filename_raw)
-    img = np.array(im)                                                                  # Convert image to numpy array
+    img = np.array(im).astype('uint16')                                                                  # Convert image to numpy array
     img16 = np.zeros((np.shape(img)[0], int(np.shape(img)[1] / 2)))
     for i in range(0, np.shape(img)[1], 2):
         img16[:, int (i / 2)] = (img[:, i + 1]<<8) + (img[:, i])                        # Convert pixels from 8 bit to 16 bit

@@ -15,23 +15,23 @@ def unscrambleImage(k, folder, filename_base, gain_total, descrambler, pixels_to
     img_unscrambled_vector = np.zeros(pixels_total)
     filename_raw = folder + '/' + filename_base + '_' + "{:0>3d}".format(k) + '.bmp'    # Import bmp file
     im = Image.open(filename_raw)
-    img = np.array(im).astype('uint16')                                                                  # Convert image to numpy array
+    img = np.array(im).astype('uint16')                                               # Convert image to numpy array
     img16 = np.zeros((np.shape(img)[0], int(np.shape(img)[1] / 2)))
     for i in range(0, np.shape(img)[1], 2):
         img16[:, int (i / 2)] = (img[:, i + 1]<<8) + (img[:, i])                        # Convert pixels from 8 bit to 16 bit
     img16_vector = img16.flatten()
     img_unscrambled_vector[:] = img16_vector[descrambler[:]]                            # Descramble pixels to the 57600 pixel format
-    return img_unscrambled_vector / gain_total
+    return img_unscrambled_vector
 
 # Set the number of total frames, fps, gain (EMCCD * amplifier) and total valid pixels
 frames = 5000
 # Array of FPS values for which the read noise and dark current is computed. Accuracy will be better for more FPS sampling points.
 # The folder names of the frames should be the same as that of the FPS value
 # fps = ['2067', '1000', '500', '333', '200', '100', '50', '33', '20', '10']
-fps = ['2067', '1000', '500', '333', '200', '100']
-gain_total = 27.665                                                                     # Total gain derived from OCAM2K test report. Product of EMCCD gain and amplifier gain
+fps = ['2067', '1000', '666', '500', '400', '333', '285', '250', '222', '200', '100', '75', '50', '25', '10', '5']
+gain_total = 21.4                                                                     # Total gain derived from OCAM2K test report. Product of EMCCD gain and amplifier gain
 pixels_total = 57600
-fits_write = 1                                                                          # Set to one if fits datacube of images (for every fps setting) has to be generated
+fits_write = 0                                                                      # Set to one if fits datacube of images (for every fps setting) has to be generated
 font = {'family': 'serif',
         'color':  'darkred',
         'weight': 'normal',
@@ -45,12 +45,13 @@ read_noise = np.zeros(pixels_total)                                             
 read_noise_sq = np.zeros(pixels_total)                                                  # Read noise squared for each pixel
 read_noise_ch = np.zeros((2, 4))                                                        # Read noise for each of the 2x4 (8 in total) output channels
 dark_current_ch = np.zeros((2, 4))                                                      # Dark current for each of the 2x4 (8 in total) output channels
+var_ch = np.zeros((2, 4, np.size(fps)))                                                      # Dark current for each of the 2x4 (8 in total) output channels
 expTime = np.zeros(np.size(fps))                                                        # Exposure time array (one for each FPS value)
 
 # Loops over the different FPS folders, writes to FITS file (optional) and computes variance for each pixel at an FPS setting
 for j in range(np.size(fps)):
     # Parsing bmp files acquired with EDT FG
-    folder = '/home/aodev/asurendran/OCAM2k/2020-03-17/unbinned/' + fps[j]
+    folder = '/home/aodev/asurendran/OCAM2k/2022-08-04/unbinned/' + fps[j]
     filename_base = 'frame'                                                             # This should be the same name as the base filename given during frame grab through EDT FG
     # Calls the descrambling function in parallel mode
     pixelCount_unscrambled = Parallel(n_jobs=num_cores)(delayed(unscrambleImage)(k, folder, filename_base, gain_total, descrambler, pixels_total) for k in range(0, frames))
@@ -68,7 +69,7 @@ for j in range(np.size(fps)):
         hdul.close()
         print('Wrote ' + fps[j] + ' fps FITS file')
     # Variance computation
-    var_pix[:, j] = np.var(pixelCount_unscrambled, axis = 0) #CHECK
+    var_pix[:, j] = np.var(pixelCount_unscramblednp / gain_total, axis = 0) #CHECK
     expTime[j] = 1 / int(fps[j])
 
 # Linear fitting exposure time with Pixel count variance to compute dark current and read noise
@@ -83,6 +84,7 @@ for i in range(0, 2):
     for j in range(0, 4):
         read_noise_ch[i, j] = np.mean(np.reshape(read_noise, (240, 240))[i * 120:(i + 1) * 120, j * 60:(j + 1) * 60])
         dark_current_ch[i, j] = np.mean(np.reshape(dark_current, (240, 240))[i * 120:(i + 1) * 120, j * 60:(j + 1) * 60])
+        var_ch[i, j, :] = np.mean(np.reshape(var_pix, (240, 240, np.size(fps)))[i * 120:(i + 1) * 120, j * 60:(j + 1) * 60, :])
 
 # Imshow read noise for all pixels
 fig1 = plt.figure()
@@ -94,7 +96,7 @@ for i in range(0, 2):
         plt.text((j * 60) + 30, (i * 120) + 60, "{:.3f}".format(read_noise_ch[i, j], fontdict=font))
 manager = plt.get_current_fig_manager()
 manager.window.showMaximized()
-plt.show()
+#plt.show()
 filename_out = 'img_readnoisef' + str(frames) + '_unbinned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')
 np.savetxt('read_noisef' + str(frames) + '_unbinned.txt', read_noise, delimiter = ',')
@@ -109,7 +111,7 @@ for i in range(0, 2):
         plt.text((j * 60) + 30, (i * 120) + 60, "{:.3f}".format(dark_current_ch[i, j], fontdict=font))
 manager = plt.get_current_fig_manager()
 manager.window.showMaximized()
-plt.show()
+#plt.show()
 filename_out = 'img_darkcurrentf' + str(frames) + '_unbinned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')
 np.savetxt('dark_currentf' + str(frames) + '_unbinned.txt', dark_current, delimiter = ',')
@@ -125,6 +127,6 @@ plt.ylabel('Variance of pixel count (e-)')
 plt.gca().set_xlim(left = 0)
 # manager = plt.get_current_fig_manager()
 # manager.window.showMaximized()
-plt.show()
+#plt.show()
 filename_out = 'img_variancef' + str(frames) + '_unbinned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')

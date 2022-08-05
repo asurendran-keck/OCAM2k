@@ -14,7 +14,7 @@ def unscrambleImage(k, folder, filename_base, gain_total, descrambler, pixels_to
     img_unscrambled_vector = np.zeros(pixels_total)
     filename_raw = folder + '/' + filename_base + '_' + "{:0>3d}".format(k) + '.bmp'    # Import bmp file
     im = Image.open(filename_raw)
-    img = np.array(im).astype('uint16')                                                                  # Convert image to numpy array
+    img = np.array(im).astype('uint16')                                                 # Convert image to numpy array
     img16 = np.zeros((np.shape(img)[0], int(np.shape(img)[1] / 2)))
     for i in range(0, np.shape(img)[1], 2):
         img16[:, int (i / 2)] = (img[:, i + 1]<<8) + (img[:, i])                        # Convert pixels from 8 bit to 16 bit
@@ -65,7 +65,7 @@ for j in range(np.size(fps)):
     if fits_write == 1:
         img = np.reshape(pixelCount_unscramblednp, (frames, 120, 120)).astype(np.int16)
         hdul = fits.HDUList(fits.PrimaryHDU(data = img))
-        filename_out = 'img_darkf' + str(frames) + '_unbinned_' + str(fps[j]) + 'fps.fits'
+        filename_out = 'img_darkf' + str(frames) + '_binned_' + str(fps[j]) + 'fps.fits'
         if os.path.exists(filename_out):
             os.remove(filename_out)
         hdul.writeto(filename_out)
@@ -98,7 +98,7 @@ for i in range(0, 2):
         plt.text((j * 30) + 15, (i * 60) + 30, "{:.3f}".format(read_noise_ch[i, j], fontdict=font))
 manager = plt.get_current_fig_manager()
 manager.window.showMaximized()
-plt.show()
+# plt.show()
 filename_out = 'img_readnoisef' + str(frames) + '_binned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')
 np.savetxt('read_noisef' + str(frames) + '_binned.txt', read_noise, delimiter = ',')
@@ -113,7 +113,7 @@ for i in range(0, 2):
         plt.text((j * 30) + 15, (i * 60) + 30, "{:.3f}".format(dark_current_ch[i, j], fontdict=font))
 manager = plt.get_current_fig_manager()
 manager.window.showMaximized()
-plt.show()
+# plt.show()
 filename_out = 'img_darkcurrentf' + str(frames) + '_binned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')
 np.savetxt('dark_currentf' + str(frames) + '_binned.txt', dark_current, delimiter = ',')
@@ -129,6 +129,6 @@ plt.ylabel('Variance of pixel count (e-)')
 plt.gca().set_xlim(left = 0)
 # manager = plt.get_current_fig_manager()
 # manager.window.showMaximized()
-plt.show()
+# plt.show()
 filename_out = 'img_variancef' + str(frames) + '_binned.png'
 plt.savefig(filename_out, bbox_inches = 'tight')
